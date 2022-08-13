@@ -1,6 +1,8 @@
 IbexaLogsUiBundle  
-[![Build Status](https://travis-ci.com/fkeloks/ibexa-logs-ui.svg?branch=master)](https://travis-ci.com/fkeloks/ibexa-logs-ui)
-[![License](https://poser.pugx.org/fkeloks/ibexa-logs-ui/license)](https://packagist.org/packages/fkeloks/ibexa-logs-ui)
+[![Build Status](https://travis-ci.com/fkeloks/ibexa-logs-ui.svg?branch=main)](https://travis-ci.com/fkeloks/ibexa-logs-ui)
+[![PHP Version Require](http://poser.pugx.org/fkeloks/ibexa-logs-ui/require/php)](https://packagist.org/packages/fkeloks/ibexa-logs-ui)
+[![Version](http://poser.pugx.org/fkeloks/ibexa-logs-ui/version)](https://packagist.org/packages/fkeloks/ibexa-logs-ui)
+[![License](http://poser.pugx.org/fkeloks/ibexa-logs-ui/license)](https://packagist.org/packages/fkeloks/ibexa-logs-ui)
 ============
 
 Symfony bundle dedicated to Ibexa, to add a log management interface to the back office.
