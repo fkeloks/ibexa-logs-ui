@@ -1,0 +1,3 @@
+role.policy.ibexa_logs_ui: Logs
+role.policy.ibexa_logs_ui.all_functions: Logs / Toutes les fonctions
+role.policy.ibexa_logs_ui.view: Logs / Voir

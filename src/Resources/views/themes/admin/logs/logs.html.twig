@@ -1,0 +1,128 @@
+{% extends ['@ezdesign/layout.html.twig', '@ezdesign/ui/layout.html.twig'] %}
+
+{% block breadcrumbs %}
+    {% include ['@ezdesign/parts/breadcrumbs.html.twig', '@ezdesign/ui/breadcrumbs.html.twig'] with { items: [
+        { value: 'breadcrumb.admin'|trans(domain='messages')|desc('Admin') },
+        { value: 'logs_ui.menu.label'|trans }
+    ]} %}
+{% endblock %}
+
+{% block page_title %}
+    {% include ['@ezdesign/parts/page_title.html.twig', '@ezdesign/ui/page_title.html.twig'] with {
+        title: 'logs_ui.menu.label'|trans,
+        iconName: 'contentlist'
+    } %}
+{% endblock %}
+
+{% block content %}
+    <div class="row ez-header pt-3">
+        <div class="container ez-container">
+            <div class="ez-table-header">
+                <div>
+                    <div class="ez-table-header__headline">
+                        {{ 'logs_ui.text.last_message'|trans }} {{ logs is not empty ? logs|first|first.date|date('d/m/Y H:i') : 'logs_ui.text.is_empty'|trans }}
+                    </div>
+                    <i class="text-secondary">{{ logPath }}</i>
+                </div>
+                <div class="ez-table-header__tools">
+                    <a href="{{ path('ibexa_logs_ui_reload') }}" class="btn btn-icon" title="{{ 'logs_ui.text.reload'|trans }}">
+                        <svg class="ez-icon ez-icon-refresh">
+                            <use xlink:href="{{ ez_icon_path('refresh') }}"></use>
+                        </svg>
+                        <span class="text-primary ml-1">{{ 'logs_ui.text.reload'|trans }}</span>
+                    </a>
+                </div>
+            </div>
+
+            {% if logs is empty %}
+                <p class="alert alert-warning">
+                    {{ 'logs_ui.text.is_empty'|trans }}
+                    <br>
+                    {{ 'logs_ui.text.log_path' }} {{ logPath }}
+                </p>
+            {% endif %}
+
+            <ul class="nav nav-tabs ez-tabs px-4" role="tablist" id="ez-tab-list-logs">
+                {% for level, filtered_logs in logs %}
+                    {% set active = loop.first %}
+                    <li class="nav-item">
+                        <a class="nav-link{% if active %} active{% endif %}" id="ez-tab-label-{{ level }}" data-toggle="tab" href="#ez-tab-{{ level }}" role="tab" aria-controls="ez-tab-{{ level }}" aria-expanded="{{ active }}">
+                            {{ level }} ({{ filtered_logs|length }})
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="tab-content container ez-container" id="ez-tab-list-content-logs">
+        {% for level, filtered_logs in logs %}
+            {% set active = loop.first %}
+            <div class="tab-pane{% if active %} active{% endif %}" id="ez-tab-{{ level }}" role="tabpanel" aria-labelledby="ez-tab-label-{{ level }}">
+                {% if perPageLogs < total %}
+                    <div class="mb-2">
+                        {% if currentChunkId != 1 %}
+                            <strong>Page {{ currentChunkId }}</strong>.
+                        {% endif %}
+                        {{ 'logs_ui.text.pagination'|trans({'%perPage%': perPageLogs|number_format(0, ',', ' '), '%total%': total|number_format(0, ',', ' ')})|raw }}
+                    </div>
+                {% endif %}
+
+                <table class="table ez-table ez-table--list">
+                    <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Logger</th>
+                        <th scope="col">Message</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for log in filtered_logs %}
+                        <tr>
+                            <th scope="row" class="text-nowrap">{{ log.date|date('d/m/Y H:i:s') }}</th>
+                            <td class="text-nowrap">
+                                <div class="badge badge-{{ log.class is defined ? log.class : 'secondary' }}">
+                                    {{ log.logger }}.{{ log.level }}
+                                </div>
+                            </td>
+                            <td class="text-break">
+                                <samp>{{ log.message }}</samp>
+                                {% if log.context is not empty or log.extra is not empty %}
+                                    <details class="mt-2">
+                                        <summary>{{ 'logs_ui.text.show_more'|trans }}</summary>
+                                        {% if log.context is not empty %}
+                                            <div class="mt-2">
+                                                <strong>{{ 'logs_ui.text.context'|trans }}&nbsp;</strong>
+                                                {% for key, value in log.context %}
+                                                    <samp class="d-block mt-1">
+                                                        "<span class="text-primary">{{ key }}</span>" =>
+                                                        "<span class="text-primary">{{ value is null ? 'null' : value }}</span>"
+                                                    </samp>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if log.extra is not empty %}
+                                            <div class="mt-2">
+                                                <strong>{{ 'logs_ui.text.extra'|trans }}&nbsp;</strong>
+                                                {% for key, value in log.extra %}
+                                                    <samp class="d-block mt-1">
+                                                        "<span class="text-primary">{{ key }}</span>" =>
+                                                        "<span class="text-primary">{{ value is null ? 'null' : value }}</span>"
+                                                    </samp>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </details>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+
+        {% from '@ezdesign/logs/pagination.html.twig' import pagination %}
+        {{ pagination((total / perPageLogs)|round(0, 'ceil'), currentChunkId, path('ibexa_logs_ui_index') ~ '/', perPageLogs, total) }}
+    </div>
+{% endblock %}

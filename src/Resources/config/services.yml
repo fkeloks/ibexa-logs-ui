@@ -1,7 +1,17 @@
 services:
-    EzPlatformLogsUi\Bundle\Controller\:
-        resource: '../../Controller/*'
-        autowire: true
-        autoconfigure: true
+    _defaults:
         public: false
-        exclude: '../../Controller/{Controller}'
+
+    IbexaLogsUi\Bundle\Controller\LogsManagerController:
+        tags:
+            - { name: controller.service_arguments }
+        arguments:
+            $kernelCacheDir: '%kernel.cache_dir%'
+            $monologLogger: '@monolog.logger'
+        calls:
+            - [ 'setContainer', [ '@service_container' ] ]
+            - [ 'performAccessCheck', [ ] ]
+
+    IbexaLogsUi\Bundle\EventSubscriber\MenuSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }

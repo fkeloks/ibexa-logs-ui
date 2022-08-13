@@ -1,0 +1,42 @@
+{% macro pagination(pages, current, url, perPageLogs, total, nearbyPagesLimit = 4) %}
+    {% if pages > 1 %}
+        <div class="m-sub-items__pagination-container">
+            <div class="m-sub-items__pagination-info">
+                {{ 'logs_ui.text.pagination'|trans({'%perPage%': perPageLogs|number_format(0, ',', ' '), '%total%': total|number_format(0, ',', ' ')})|raw }}
+            </div>
+            <ul class="c-pagination pagination">
+                {% for i in 1..pages %}
+                    {% if 0 == (current - nearbyPagesLimit) - loop.index %}
+                        <li class="c-pagination-button page-item">
+                            <a href="{{ (url ~ 1)|e }}" class="page-link">1</a>
+                        </li>
+                        {% if 1 != loop.index %}
+                            <li class="c-pagination-button page-item disabled">
+                                <button class="page-link" aria-disabled="true">...</button>
+                            </li>
+                        {% endif %}
+                    {% elseif 0 == (current + nearbyPagesLimit) - loop.index  and (current + nearbyPagesLimit) < pages %}
+                        <li class="c-pagination-button page-item disabled">
+                            <button class="page-link" aria-disabled="true">...</button>
+                        </li>
+                    {% elseif 0 < (current - nearbyPagesLimit) - loop.index %}
+                    {% elseif 0 > (current + nearbyPagesLimit) - loop.index %}
+                    {% else %}
+                        <li class="c-pagination-button page-item {{ current == loop.index ? 'active' }}">
+                            {% if current == loop.index %}
+                                <button class="page-link">{{ loop.index }}</button>
+                            {% else %}
+                                <a href="{{ url ~ loop.index }}" class="page-link">{{ loop.index }}</a>
+                            {% endif %}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if current != pages and (current + nearbyPagesLimit) < pages %}
+                    <li class="c-pagination-button page-item">
+                        <a href="{{ (url ~ pages)|e }}" class="page-link">{{ pages }}</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+{% endmacro %}

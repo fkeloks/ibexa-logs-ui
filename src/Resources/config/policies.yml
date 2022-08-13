@@ -1,3 +1,2 @@
-ezplatform_logs_ui:
-    read_logs: ~
-    reload_logs: ~
+ibexa_logs_ui:
+    view: ~

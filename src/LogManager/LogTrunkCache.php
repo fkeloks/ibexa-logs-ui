@@ -1,21 +1,15 @@
 <?php
 
-namespace EzPlatformLogsUi\Bundle\LogManager;
+namespace IbexaLogsUi\Bundle\LogManager;
 
-use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException;
-use Symfony\Component\Cache\Simple\FilesystemCache;
+use IbexaLogsUi\Bundle\Controller\LogsManagerController;
+use Psr\Cache\InvalidArgumentException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\CacheItem;
 
-/**
- * Class LogTrunkCache
- *
- * @author Florian Bouché <contact@florian-bouche.fr>
- *
- * @package EzPlatformLogsUi\Bundle\LogManager
- */
-class LogTrunkCache {
-
-    /** @var CacheInterface */
+class LogTrunkCache
+{
+    /** @var FilesystemAdapter */
     private $cacheSystem;
 
     /** @var string */
@@ -24,112 +18,85 @@ class LogTrunkCache {
     /** @var string */
     private $cacheNamespace;
 
-    /**
-     * LogTrunkCache constructor.
-     *
-     * @param string $logPath
-     * @param string $cacheDirectory
-     * @param string $cacheNamespace
-     */
-    public function __construct(string $logPath, string $cacheDirectory, string $cacheNamespace = '') {
+    public function __construct(string $logPath, string $cacheDirectory, string $cacheNamespace = '')
+    {
         $this->logPath = $logPath;
         $this->cacheNamespace = $cacheNamespace;
-
-        $this->cacheSystem = new FilesystemCache($cacheNamespace, 0, $cacheDirectory);
+        $this->cacheSystem = new FilesystemAdapter($cacheNamespace, 0, $cacheDirectory);
     }
 
-    /**
-     * @param string $subject
-     *
-     * @return string
-     */
-    public function getCacheKey(string $subject = 'logs'): string {
+    public function getCacheKey(string $subject = 'logs'): string
+    {
         return $this->cacheNamespace . '.' . $subject . '.' . md5($this->logPath);
     }
 
-    /**
-     * @param int $chunkId
-     *
-     * @return string
-     */
-    public function getChunkIdentifier(int $chunkId): string {
+    public function getChunkIdentifier(int $chunkId): string
+    {
         return $this->getCacheKey() . '.chunk.' . $chunkId;
     }
 
-    /**
-     * Determines whether an item is present in the cache.
-     *
-     * @param int $chunkId
-     *
-     * @return bool
-     */
-    public function hasChunk(int $chunkId): bool {
+    public function hasChunk(int $chunkId): bool
+    {
         try {
-            return $this->cacheSystem->has($this->getChunkIdentifier($chunkId));
+            /** @var CacheItem $cacheItem */
+            $cacheItem = $this->cacheSystem->getItem($this->getChunkIdentifier($chunkId));
+
+            return $cacheItem->isHit();
         } catch (InvalidArgumentException $e) {
             return false;
         }
     }
 
-    /**
-     * Fetches a value from the cache.
-     *
-     * @param int $chunkId
-     * @param null $default
-     *
-     * @return mixed
-     */
-    public function getChunk(int $chunkId, $default = null) {
+    public function getChunk(int $chunkId, $default = null)
+    {
         try {
-            return $this->cacheSystem->get($this->getChunkIdentifier($chunkId), $default);
+            /** @var CacheItem $cacheItem */
+            $cacheItem = $this->cacheSystem->getItem($this->getChunkIdentifier($chunkId));
+
+            if ($cacheItem->isHit()) {
+                return $cacheItem->get();
+            }
+
+            return $default;
         } catch (InvalidArgumentException $e) {
             return false;
         }
     }
 
-    /**
-     * @param int $currentChunkId
-     * @param int $total
-     * @param null $default
-     *
-     * @return bool|mixed|null
-     */
-    public function getLastChunk(int $currentChunkId, int $total, $default = null) {
+    public function getLastChunk(int $currentChunkId, int $total, $default = null)
+    {
         try {
-            $lastChunkCacheKey = $this->getChunkIdentifier(ceil($total / 20) - ($currentChunkId - 1));
+            $lastChunkCacheKey = $this->getChunkIdentifier(ceil($total / LogsManagerController::$PER_PAGE_LOGS) - ($currentChunkId - 1));
 
-            return $this->cacheSystem->get($lastChunkCacheKey, $default);
+            /** @var CacheItem $cacheItem */
+            $cacheItem = $this->cacheSystem->getItem($lastChunkCacheKey);
+
+            if ($cacheItem->isHit()) {
+                return $cacheItem->get();
+            }
+
+            return $default;
         } catch (InvalidArgumentException $e) {
             return false;
         }
     }
 
-    /**
-     * Persists data in the cache, uniquely referenced by a key with an optional expiration TTL time.
-     *
-     * @param int $chunkId
-     * @param mixed $value
-     * @param null|int|\DateInterval $ttl
-     *
-     * @return bool
-     */
-    public function setChunk(int $chunkId, $value, $ttl = 7200): bool {
+    public function setChunk(int $chunkId, $value, $ttl = 300): bool
+    {
         try {
-            return $this->cacheSystem->set($this->getChunkIdentifier($chunkId), $value, $ttl);
+            /** @var CacheItem $cacheItem */
+            $cacheItem = $this->cacheSystem->getItem($this->getChunkIdentifier($chunkId));
+            $cacheItem->set($value)->expiresAfter($ttl);
+
+            return $this->cacheSystem->save($cacheItem);
         } catch (InvalidArgumentException $e) {
             return false;
         }
     }
 
-    /**
-     * Deletes multiple cache items in a single operation.
-     *
-     * @param int $total
-     *
-     * @return bool
-     */
-    public function clearChunks(int $total): bool {
-        $numberOfChunks = ceil($total / 20);
+    public function clearChunks(int $total): bool
+    {
+        $numberOfChunks = ceil($total / LogsManagerController::$PER_PAGE_LOGS);
         $chunkCacheKeys = [];
 
         for ($chunkId = 1; $chunkId <= $numberOfChunks; $chunkId++) {
@@ -137,17 +104,14 @@ class LogTrunkCache {
         }
 
         try {
-            return $this->cacheSystem->deleteMultiple($chunkCacheKeys);
+            return $this->cacheSystem->deleteItems($chunkCacheKeys);
         } catch (InvalidArgumentException $e) {
             return false;
         }
     }
 
-    /**
-     * @return CacheInterface
-     */
-    public function getCacheSystem(): CacheInterface {
+    public function getCacheSystem(): FilesystemAdapter
+    {
         return $this->cacheSystem;
     }
-
 }

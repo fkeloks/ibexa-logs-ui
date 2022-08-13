@@ -1,27 +1,16 @@
 <?php
 
-namespace EzPlatformLogsUi\Bundle\Security;
+namespace IbexaLogsUi\Bundle\Security;
 
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Security\PolicyProvider\YamlPolicyProvider;
 
-/**
- * Class LogsUiProvider
- *
- * @author Florian Bouché <contact@florian.bouche.fr>
- *
- * @package EzPlatformLogsUi\Bundle\Security
- */
-class LogsUiProvider extends YamlPolicyProvider {
-
+class LogsUiProvider extends YamlPolicyProvider
+{
     /**
-     * YAML based policy provider.
-     *
-     * @return array
+     * {@inheritdoc}
      */
-    protected function getFiles(): array {
-        return [
-            __DIR__ . '/../Resources/config/policies.yml'
-        ];
+    protected function getFiles(): array
+    {
+        return [__DIR__ . '/../Resources/config/policies.yml'];
     }
-
 }

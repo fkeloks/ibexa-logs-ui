@@ -1,133 +1,140 @@
 <?php
 
-namespace EzPlatformLogsUi\Bundle\Controller;
+namespace IbexaLogsUi\Bundle\Controller;
 
 use eZ\Publish\Core\MVC\Symfony\Security\Authorization\Attribute;
-use EzPlatformLogsUi\Bundle\LogManager\LogFile;
-use EzPlatformLogsUi\Bundle\LogManager\LogTrunkCache;
-use Psr\SimpleCache\InvalidArgumentException;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use IbexaLogsUi\Bundle\LogManager\LogFile;
+use IbexaLogsUi\Bundle\LogManager\LogTrunkCache;
+use EzSystems\EzPlatformAdminUiBundle\Controller\Controller;
+use Monolog\Handler\HandlerInterface;
+use Monolog\Logger;
+use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Class LogsManagerController
- *
- * @author Florian Bouché <contact@florian-bouche.fr>
- *
- * @package EzPlatformLogsUi\Bundle\Controller
- */
-class LogsManagerController extends Controller {
+class LogsManagerController extends Controller
+{
+    /** @var int */
+    public static $PER_PAGE_LOGS = 200;
 
-    /**
-     * @param string $name
-     *
-     * @return mixed|null
-     */
-    protected function getParameterSafely(string $name) {
-        try {
-            return $this->container->getParameter($name);
-        } catch (\InvalidArgumentException $argumentException) {
-            return null;
-        }
+    /** @var int */
+    public static $MAX_LOGS = 10000;
+
+    /** @var string */
+    private $kernelCacheDir;
+
+    /** @var Logger */
+    private $monologLogger;
+
+    public function __construct(string $kernelCacheDir, Logger $monologLogger)
+    {
+        $this->kernelCacheDir = $kernelCacheDir;
+        $this->monologLogger = $monologLogger;
     }
 
-    /**
-     * @param int $chunkId
-     *
-     * @return Response
-     *
-     * @throws InvalidArgumentException
-     */
-    public function indexAction(int $chunkId = 1): Response {
-        $this->denyAccessUnlessGranted(new Attribute('ezplatform_logs_ui', 'read_logs'));
+    public function index(int $chunkId = 1): Response
+    {
+        $this->denyAccessUnlessGranted(new Attribute('ibexa_logs_ui', 'view'));
 
-        $logPath = $this->getParameterSafely('log_path');
-        $cacheDir = $this->getParameterSafely('kernel.cache_dir');
-        $projectDir = $this->getParameterSafely('kernel.project_dir');
+        $logPaths = $this->getLogPaths();
+        $logPath = reset($logPaths);
 
-        if ($logPath !== null && $projectDir !== null) {
-            $formattedLogPath = str_replace([$projectDir . '\\', DIRECTORY_SEPARATOR], ['', '/'], $logPath);
-        }
-
-        if ($logPath === null || !file_exists($logPath)) {
-            return $this->render('EzPlatformLogsUiBundle:logs:index.html.twig', [
-                'logPath'        => $formattedLogPath ?? $logPath,
+        if (!is_string($logPath) || !file_exists($logPath)) {
+            return $this->render('@ezdesign/logs/logs.html.twig', [
+                'logPath' => $logPath,
                 'currentChunkId' => $chunkId,
-                'total'          => null,
-                'logs'           => []
+                'perPageLogs' => self::$PER_PAGE_LOGS,
+                'total' => null,
+                'logs' => []
             ]);
         }
 
         $logFile = new LogFile($logPath);
-        $logTrunkCache = new LogTrunkCache($logPath, $cacheDir, 'ezplatform_logs_ui');
+        $logTrunkCache = new LogTrunkCache($logPath, $this->kernelCacheDir, 'ibexa_logs_ui');
 
-        if ($chunkId >= 2) {
-            $total = $logTrunkCache->getCacheSystem()->get($logTrunkCache->getCacheKey('total'), 0);
-            if ($chunkId > ($total / 20)) {
-                $chunkId = 1;
-            }
+        /** @var CacheItem $totalCacheItem */
+        $totalCacheItem = $logTrunkCache->getCacheSystem()->getItem($logTrunkCache->getCacheKey('total'));
+        $total = $totalCacheItem->isHit() ? $totalCacheItem->get() : 0;
+
+        if ($chunkId >= 2 && $chunkId > ceil($total / self::$PER_PAGE_LOGS)) {
+            $chunkId = 1;
         }
 
         if (!$logTrunkCache->hasChunk($chunkId)) {
-            $lines = $logFile->tail(1000);
+            $lines = $logFile->tail(self::$MAX_LOGS);
 
             if (!empty($lines)) {
                 $total = count($lines);
-                $logTrunkCache->getCacheSystem()->set($logTrunkCache->getCacheKey('total'), $total);
+                $logTrunkCache->getCacheSystem()->save($totalCacheItem->set($total)->expiresAfter(300));
 
-                foreach (array_chunk($lines, 20) as $index => $chunk) {
+                foreach (array_chunk($lines, self::$PER_PAGE_LOGS) as $index => $chunk) {
                     $logTrunkCache->setChunk($index + 1, $chunk);
                 }
 
-                $logs = array_slice($logFile->parse($lines), 0, 20);
+                $logs = array_slice($logFile->parse($lines), 0, self::$PER_PAGE_LOGS);
             }
         } else {
-            $total = $logTrunkCache->getCacheSystem()->get($logTrunkCache->getCacheKey('total'));
             $lines = $logTrunkCache->getChunk($chunkId);
             $logs = $logFile->parse($lines);
         }
 
-        return $this->render('EzPlatformLogsUiBundle:logs:index.html.twig', [
-            'logPath'        => $formattedLogPath ?? $logPath,
+        $logs = array_reduce($logs ?? [], static function (array $carry, array $log) {
+            $carry[$log['level']][] = $log;
+
+            return $carry;
+        }, []);
+
+        return $this->render('@ezdesign/logs/logs.html.twig', [
+            'logPath' => $logPath,
             'currentChunkId' => $chunkId,
-            'total'          => $total ?? 0,
-            'logs'           => $logs ?? []
+            'perPageLogs' => self::$PER_PAGE_LOGS,
+            'total' => $total ?? 0,
+            'logs' => $logs
         ]);
     }
 
-    /**
-     * @return Response
-     *
-     * @throws InvalidArgumentException
-     */
-    public function reloadAction(): Response {
-        $this->denyAccessUnlessGranted(new Attribute('ezplatform_logs_ui', 'reload_logs'));
+    public function reload(): Response
+    {
+        $this->denyAccessUnlessGranted(new Attribute('ibexa_logs_ui', 'view'));
 
-        $logPath = $this->getParameterSafely('log_path');
-        $cacheDir = $this->getParameterSafely('kernel.cache_dir');
+        $logPaths = $this->getLogPaths();
+        $logPath = reset($logPaths);
 
-        if ($logPath !== null && file_exists($logPath)) {
+        if (is_string($logPath) && file_exists($logPath)) {
             $logFile = new LogFile($logPath);
-            $logTrunkCache = new LogTrunkCache($logPath, $cacheDir, 'ezplatform_logs_ui');
+            $logTrunkCache = new LogTrunkCache($logPath, $this->kernelCacheDir, 'ibexa_logs_ui');
 
-            $lines = $logFile->tail(1000);
+            $lines = $logFile->tail(self::$MAX_LOGS);
 
             if (!empty($lines)) {
-                $oldTotal = $logTrunkCache->getCacheSystem()->get($logTrunkCache->getCacheKey('total'), 0);
-                if ($oldTotal) {
-                    $logTrunkCache->clearChunks($oldTotal);
+                /** @var CacheItem $oldTotalCacheItem */
+                $oldTotalCacheItem = $logTrunkCache->getCacheSystem()->getItem($logTrunkCache->getCacheKey('total'));
+                if ($oldTotalCacheItem->isHit() && $oldTotalCacheItem->get()) {
+                    $logTrunkCache->clearChunks($oldTotalCacheItem->get());
                 }
 
                 $total = count($lines);
-                $logTrunkCache->getCacheSystem()->set($logTrunkCache->getCacheKey('total'), $total);
+                $logTrunkCache->getCacheSystem()->save($oldTotalCacheItem->set($total)->expiresAfter(300));
 
-                foreach (array_chunk($lines, 20) as $index => $chunk) {
+                foreach (array_chunk($lines, self::$PER_PAGE_LOGS) as $index => $chunk) {
                     $logTrunkCache->setChunk($index + 1, $chunk);
                 }
             }
         }
 
-        return $this->redirectToRoute('ezplatform_logs_ui_index');
+        return $this->redirectToRoute('ibexa_logs_ui_index');
     }
 
+    private function getLogPaths(): array
+    {
+        return array_map(static function (HandlerInterface $handler) {
+            return method_exists($handler, 'getUrl') ? $handler->getUrl() : $handler->getHandler()->getUrl();
+        }, array_filter($this->monologLogger->getHandlers(), static function (HandlerInterface $handler) {
+            return
+                method_exists($handler, 'getUrl') ||
+                (
+                    method_exists($handler, 'getHandler') &&
+                    method_exists($handler->getHandler(), 'getUrl')
+                );
+        }));
+    }
 }

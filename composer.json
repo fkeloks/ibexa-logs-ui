@@ -1,9 +1,9 @@
 {
-    "name": "fkeloks/ezplatform-logs-ui",
+    "name": "fkeloks/ibexa-logs-ui",
     "description": "",
-    "keywords": ["ezplatform", "logs", "bundle", "ui", "admin"],
+    "keywords": ["ibexa", "logs", "bundle", "ui", "admin"],
     "type": "symfony-bundle",
-    "homepage": "https://github.com/fkeloks/ezplatform-logs-ui",
+    "homepage": "https://github.com/fkeloks/ibexa-logs-ui",
     "license": "MIT",
     "authors": [
         {
@@ -13,19 +13,23 @@
     ],
     "autoload": {
         "psr-4": {
-            "EzPlatformLogsUi\\Bundle\\": "src/"
+            "IbexaLogsUi\\Bundle\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "EzPlatformLogsUi\\Tests\\": "tests/"
+            "IbexaLogsUi\\Tests\\": "tests/"
         }
     },
     "require": {
-        "php": "^7.1.3",
-        "ezsystems/ezplatform-admin-ui": "1.5.*",
-        "phpunit/phpunit": "7.5.*",
-        "symfony/cache": "^3.4"
+        "php": ">=7.3",
+        "ext-json": "*",
+        "ezsystems/ezplatform-admin-ui": "^2.3",
+        "monolog/monolog": "^2.2",
+        "symfony/cache": "^5.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5"
     },
     "scripts": {
         "tests": "phpunit"

@@ -1,9 +1,9 @@
-ezplatform_logs_ui_index:
-    path: /ezplatform-logs-ui/{chunkId}
-    defaults: { _controller: EzPlatformLogsUiBundle:LogsManager:index, chunkId: 1 }
+ibexa_logs_ui_index:
+    path: /ibexa-logs-ui/{chunkId}
+    defaults: { _controller: IbexaLogsUi\Bundle\Controller\LogsManagerController::index, chunkId: 1 }
     requirements:
         chunkId: '\d+'
 
-ezplatform_logs_ui_reload:
-    path: /ezplatform-logs-ui/reload
-    defaults: { _controller: EzPlatformLogsUiBundle:LogsManager:reload }
+ibexa_logs_ui_reload:
+    path: /ibexa-logs-ui/reload
+    defaults: { _controller: IbexaLogsUi\Bundle\Controller\LogsManagerController::reload }

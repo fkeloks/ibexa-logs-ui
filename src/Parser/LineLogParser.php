@@ -1,32 +1,21 @@
 <?php
 
-namespace EzPlatformLogsUi\Bundle\Parser;
+namespace IbexaLogsUi\Bundle\Parser;
 
 use Exception;
 
-/**
- * Class LineLogParser
- *
- * @author Florian Bouché <contact@florian-bouche.fr>
- *
- * @package EzPlatformLogsUi\Bundle\Parser
- */
-class LineLogParser {
-
+class LineLogParser
+{
     /** @var string */
-    private const PARSER_PATTERN = '/\[(?P<date>.*)\] (?P<logger>\w+).(?P<level>\w+): (?P<message>.*[^ ]+) (?P<context>[^ ]+) (?P<extra>[^ ]+)/';
+    private const PARSER_PATTERN = '/\[(?<date>.*?)\] (?<logger>\w+).(?<level>\w+): (?<message>[^\[\{]+) (?<context>[\[\{].*[\]\}]) (?<extra>[\[\{].*[\]\}])/';
 
     /** @var array */
     private const PARSER_GROUPS = ['date', 'logger', 'level', 'message', 'context', 'extra'];
 
-    /**
-     * @param string $log
-     *
-     * @return array
-     */
-    public function parse(string $log): array {
+    public function parse(string $log): array
+    {
         try {
-            if (!is_string($log) || $log === '') {
+            if ($log === '') {
                 return [];
             }
 
@@ -41,17 +30,20 @@ class LineLogParser {
                 }
             }
 
+            // Json extract
+            $jsonContext = $matches['context'] === '[]' ? [] : json_decode($matches['context'], true, 2);
+            $jsonExtra = $matches['extra'] === '[]' ? [] : json_decode($matches['extra'], true, 2);
+
             return [
-                'date'    => $matches['date'],
-                'logger'  => $matches['logger'],
-                'level'   => $matches['level'],
+                'date' => $matches['date'],
+                'logger' => $matches['logger'],
+                'level' => $matches['level'],
                 'message' => $matches['message'],
-                'context' => $matches['context'],
-                'extra'   => $matches['extra']
+                'context' => !$jsonContext && $jsonContext !== [] ? [$matches['context']] : $jsonContext,
+                'extra' => !$jsonExtra && $jsonExtra !== [] ? [$matches['extra']] : $jsonExtra,
             ];
         } catch (Exception $exception) {
             return [];
         }
     }
-
 }
