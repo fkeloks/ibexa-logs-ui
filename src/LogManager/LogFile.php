@@ -8,7 +8,7 @@ use IbexaLogsUi\Bundle\Parser\LineLogParser;
 class LogFile
 {
     /** @var array Log levels for Bootstrap classes */
-    private const LOG_LEVELS = [
+    public const LOG_LEVELS = [
         'DEBUG' => 'secondary',
         'INFO' => 'info',
         'NOTICE' => 'info',
@@ -65,7 +65,7 @@ class LogFile
             $line = fgets($handle);
             if (trim($line)) {
                 $text[$lines - $lineCounter - 1] = $line;
-            } elseif ($skipEmptyLines && $lineCounter < ($lines + LogsManagerController::$PER_PAGE_LOGS)) {
+            } elseif ($skipEmptyLines && $lineCounter < ($lines + LogsManagerController::PER_PAGE_LOGS)) {
                 $lineCounter++;
             }
 

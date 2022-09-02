@@ -4,20 +4,16 @@ namespace IbexaLogsUi\Bundle\Controller;
 
 use eZ\Publish\Core\MVC\Symfony\Security\Authorization\Attribute;
 use IbexaLogsUi\Bundle\LogManager\LogFile;
-use IbexaLogsUi\Bundle\LogManager\LogTrunkCache;
+use IbexaLogsUi\Bundle\LogManager\LogsCache;
 use EzSystems\EzPlatformAdminUiBundle\Controller\Controller;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Logger;
-use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\HttpFoundation\Response;
 
 class LogsManagerController extends Controller
 {
-    /** @var int */
-    public static $PER_PAGE_LOGS = 200;
-
-    /** @var int */
-    public static $MAX_LOGS = 10000;
+    public const PER_PAGE_LOGS = 200;
+    public const MAX_LOGS = 3000;
 
     /** @var string */
     private $kernelCacheDir;
@@ -31,65 +27,56 @@ class LogsManagerController extends Controller
         $this->monologLogger = $monologLogger;
     }
 
-    public function index(int $chunkId = 1): Response
+    public function index(string $level = 'all', int $page = 1): Response
     {
+        if ($level === 'reload') {
+            return $this->reload();
+        }
+
         $this->denyAccessUnlessGranted(new Attribute('ibexa_logs_ui', 'view'));
 
         $logPaths = $this->getLogPaths();
         $logPath = reset($logPaths);
 
         if (!is_string($logPath) || !file_exists($logPath)) {
-            return $this->render('@ezdesign/logs/logs.html.twig', [
-                'logPath' => $logPath,
-                'currentChunkId' => $chunkId,
-                'perPageLogs' => self::$PER_PAGE_LOGS,
-                'total' => null,
-                'logs' => []
-            ]);
+            return $this->renderLogs($logPath, $level, $page);
         }
 
         $logFile = new LogFile($logPath);
-        $logTrunkCache = new LogTrunkCache($logPath, $this->kernelCacheDir, 'ibexa_logs_ui');
+        $logsCache = new LogsCache($logPath, $this->kernelCacheDir);
 
-        /** @var CacheItem $totalCacheItem */
-        $totalCacheItem = $logTrunkCache->getCacheSystem()->getItem($logTrunkCache->getCacheKey('total'));
-        $total = $totalCacheItem->isHit() ? $totalCacheItem->get() : 0;
+        $logs = $logsCache->get(static function () use ($logFile) {
+            $lines = $logFile->tail(self::MAX_LOGS);
 
-        if ($chunkId >= 2 && $chunkId > ceil($total / self::$PER_PAGE_LOGS)) {
-            $chunkId = 1;
+            return $logFile->parse($lines);
+        });
+
+        // Sort available levels
+        $logLevels = array_unique(array_column($logs, 'level'));
+        $logLevels = array_intersect(array_keys(LogFile::LOG_LEVELS), $logLevels);
+
+        // Filter by level
+        if ($level !== 'all') {
+            $filter = mb_strtoupper($level);
+            $logs = array_filter($logs, static function (array $log) use ($filter) {
+                return $log['level'] === $filter;
+            });
         }
 
-        if (!$logTrunkCache->hasChunk($chunkId)) {
-            $lines = $logFile->tail(self::$MAX_LOGS);
-
-            if (!empty($lines)) {
-                $total = count($lines);
-                $logTrunkCache->getCacheSystem()->save($totalCacheItem->set($total)->expiresAfter(300));
-
-                foreach (array_chunk($lines, self::$PER_PAGE_LOGS) as $index => $chunk) {
-                    $logTrunkCache->setChunk($index + 1, $chunk);
-                }
-
-                $logs = array_slice($logFile->parse($lines), 0, self::$PER_PAGE_LOGS);
-            }
-        } else {
-            $lines = $logTrunkCache->getChunk($chunkId);
-            $logs = $logFile->parse($lines);
+        // Empty logs for current level
+        if (empty($logs)) {
+            return $this->renderLogs($logPath, $level, $page);
         }
 
-        $logs = array_reduce($logs ?? [], static function (array $carry, array $log) {
-            $carry[$log['level']][] = $log;
+        $total = count($logs);
+        $logs = array_chunk($logs, 200);
 
-            return $carry;
-        }, []);
+        // Invalid page number
+        if (!array_key_exists($page - 1, $logs)) {
+            return $this->renderLogs($logPath, $level, $page, $total, $logs[0], $logLevels);
+        }
 
-        return $this->render('@ezdesign/logs/logs.html.twig', [
-            'logPath' => $logPath,
-            'currentChunkId' => $chunkId,
-            'perPageLogs' => self::$PER_PAGE_LOGS,
-            'total' => $total ?? 0,
-            'logs' => $logs
-        ]);
+        return $this->renderLogs($logPath, $level, $page, $total, $logs[$page - 1], $logLevels);
     }
 
     public function reload(): Response
@@ -100,25 +87,8 @@ class LogsManagerController extends Controller
         $logPath = reset($logPaths);
 
         if (is_string($logPath) && file_exists($logPath)) {
-            $logFile = new LogFile($logPath);
-            $logTrunkCache = new LogTrunkCache($logPath, $this->kernelCacheDir, 'ibexa_logs_ui');
-
-            $lines = $logFile->tail(self::$MAX_LOGS);
-
-            if (!empty($lines)) {
-                /** @var CacheItem $oldTotalCacheItem */
-                $oldTotalCacheItem = $logTrunkCache->getCacheSystem()->getItem($logTrunkCache->getCacheKey('total'));
-                if ($oldTotalCacheItem->isHit() && $oldTotalCacheItem->get()) {
-                    $logTrunkCache->clearChunks($oldTotalCacheItem->get());
-                }
-
-                $total = count($lines);
-                $logTrunkCache->getCacheSystem()->save($oldTotalCacheItem->set($total)->expiresAfter(300));
-
-                foreach (array_chunk($lines, self::$PER_PAGE_LOGS) as $index => $chunk) {
-                    $logTrunkCache->setChunk($index + 1, $chunk);
-                }
-            }
+            $logsCache = new LogsCache($logPath, $this->kernelCacheDir);
+            $logsCache->clear();
         }
 
         return $this->redirectToRoute('ibexa_logs_ui_index');
@@ -136,5 +106,23 @@ class LogsManagerController extends Controller
                     method_exists($handler->getHandler(), 'getUrl')
                 );
         }));
+    }
+
+    private function renderLogs(
+        string $logPath,
+        string $level,
+        int $page,
+        int $total = 0,
+        array $logs = [],
+        array $logLevels = LogFile::LOG_LEVELS
+    ): Response {
+        return $this->render('@ezdesign/logs/logs.html.twig', [
+            'log_path' => $logPath,
+            'level' => $level,
+            'page' => $page,
+            'total' => $total,
+            'logs' => $logs,
+            'log_levels' => $logLevels
+        ]);
     }
 }

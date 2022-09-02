@@ -1,8 +1,9 @@
 ibexa_logs_ui_index:
-    path: /ibexa-logs-ui/{chunkId}
-    defaults: { _controller: IbexaLogsUi\Bundle\Controller\LogsManagerController::index, chunkId: 1 }
+    path: /ibexa-logs-ui/{level}/{page}
+    defaults: { _controller: IbexaLogsUi\Bundle\Controller\LogsManagerController::index, level: all, page: 1 }
     requirements:
-        chunkId: '\d+'
+        level: '\w+'
+        page: '\d+'
 
 ibexa_logs_ui_reload:
     path: /ibexa-logs-ui/reload

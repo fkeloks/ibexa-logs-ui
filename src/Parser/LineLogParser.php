@@ -7,7 +7,7 @@ use Exception;
 class LineLogParser
 {
     /** @var string */
-    private const PARSER_PATTERN = '/\[(?<date>.*?)\] (?<logger>\w+).(?<level>\w+): (?<message>[^\[\{]+) (?<context>[\[\{].*[\]\}]) (?<extra>[\[\{].*[\]\}])/';
+    private const PARSER_PATTERN = '/^\[(?<date>.*?)\] (?<logger>\w+).(?<level>\w+): (?<message>[^\[\{]+) (?<context>[\[\{].*[\]\}]) (?<extra>[\[\{].*[\]\}])$/';
 
     /** @var array */
     private const PARSER_GROUPS = ['date', 'logger', 'level', 'message', 'context', 'extra'];
