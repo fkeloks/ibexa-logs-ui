@@ -3,6 +3,7 @@
 namespace IbexaLogsUi\Bundle\Parser;
 
 use Exception;
+use Symfony\Component\VarDumper\Cloner\VarCloner;
 
 class LineLogParser
 {
@@ -30,17 +31,15 @@ class LineLogParser
                 }
             }
 
-            // Json extract
-            $jsonContext = $matches['context'] === '[]' ? [] : json_decode($matches['context'], true, 2);
-            $jsonExtra = $matches['extra'] === '[]' ? [] : json_decode($matches['extra'], true, 2);
+            $cloner = new VarCloner();
 
             return [
                 'date' => $matches['date'],
                 'logger' => $matches['logger'],
                 'level' => $matches['level'],
                 'message' => $matches['message'],
-                'context' => !$jsonContext && $jsonContext !== [] ? [$matches['context']] : $jsonContext,
-                'extra' => !$jsonExtra && $jsonExtra !== [] ? [$matches['extra']] : $jsonExtra,
+                'context' => $cloner->cloneVar(json_decode($matches['context'], true)),
+                'extra' => $cloner->cloneVar(json_decode($matches['extra'], true)),
             ];
         } catch (Exception $exception) {
             return [];

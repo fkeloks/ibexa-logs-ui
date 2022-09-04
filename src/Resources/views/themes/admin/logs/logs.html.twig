@@ -92,30 +92,20 @@
                             </div>
                         </td>
                         <td class="text-break">
-                            <samp>{{ log.message }}</samp>
+                            <samp>{{ profiler_dump_log(log.message, log.context) }}</samp>
                             {% if log.context is not empty or log.extra is not empty %}
                                 <details class="mt-2">
                                     <summary>{{ 'logs_ui.text.show_more'|trans }}</summary>
                                     {% if log.context is not empty %}
                                         <div class="mt-2">
                                             <strong>{{ 'logs_ui.text.context'|trans }}&nbsp;</strong>
-                                            {% for key, value in log.context %}
-                                                <samp class="d-block mt-1">
-                                                    "<span class="text-primary">{{ key }}</span>" =>
-                                                    "<span class="text-primary">{{ value is null ? 'null' : value }}</span>"
-                                                </samp>
-                                            {% endfor %}
+                                            {{ profiler_dump(log.context, maxDepth=1) }}
                                         </div>
                                     {% endif %}
                                     {% if log.extra is not empty %}
                                         <div class="mt-2">
                                             <strong>{{ 'logs_ui.text.extra'|trans }}&nbsp;</strong>
-                                            {% for key, value in log.extra %}
-                                                <samp class="d-block mt-1">
-                                                    "<span class="text-primary">{{ key }}</span>" =>
-                                                    "<span class="text-primary">{{ value is null ? 'null' : value }}</span>"
-                                                </samp>
-                                            {% endfor %}
+                                            {{ profiler_dump(log.extra, maxDepth=1) }}
                                         </div>
                                     {% endif %}
                                 </details>

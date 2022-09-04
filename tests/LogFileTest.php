@@ -4,6 +4,7 @@ namespace IbexaLogsUi\Tests;
 
 use IbexaLogsUi\Bundle\LogManager\LogFile;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\VarDumper\Cloner\VarCloner;
 
 class LogFileTest extends TestCase
 {
@@ -45,13 +46,15 @@ class LogFileTest extends TestCase
         $lines = $this->validLogFile->parse($lines);
         $this->assertIsArray($lines);
         $this->assertCount(32, $lines);
-        $this->assertSame([
+
+        $cloner = new VarCloner();
+        $this->assertEquals([
             'date' => '2019-06-23 16:20:29',
             'logger' => 'php',
             'level' => 'INFO',
             'message' => 'User Deprecated: Checking for the initialization of the "ezpublish.siteaccessaware.service.object_state" private service is deprecated since Symfony 3.4 and won\'t be supported anymore in Symfony 4.0.',
-            'context' => ['exception' => '[object] (ErrorException(code: 0): User Deprecated: Checking for the initialization of the "ezpublish.siteaccessaware.service.object_state" private service is deprecated since Symfony 3.4 and won\'t be supported anymore in Symfony 4.0. at ezplatform\\vendor\\symfony\\symfony\\src\\Symfony\\Component\\DependencyInjection\\Container.php:364)'],
-            'extra' => [],
+            'context' => $cloner->cloneVar(['exception' => '[object] (ErrorException(code: 0): User Deprecated: Checking for the initialization of the "ezpublish.siteaccessaware.service.object_state" private service is deprecated since Symfony 3.4 and won\'t be supported anymore in Symfony 4.0. at ezplatform\\vendor\\symfony\\symfony\\src\\Symfony\\Component\\DependencyInjection\\Container.php:364)']),
+            'extra' => $cloner->cloneVar([]),
             'class' => 'info'
         ], $lines[0]);
     }
