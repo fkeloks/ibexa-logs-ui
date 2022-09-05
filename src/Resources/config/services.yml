@@ -15,3 +15,7 @@ services:
     IbexaLogsUi\Bundle\EventSubscriber\MenuSubscriber:
         tags:
             - { name: kernel.event_subscriber }
+
+    IbexaLogsUi\Bundle\Twig\DumpLogExtension:
+        tags:
+            - { name: twig.extension }
