@@ -20,7 +20,7 @@ class IbexaLogsUiBundle extends Bundle
     {
         parent::build($container);
 
-        $eZExtension = $container->getExtension('ezpublish');
+        $eZExtension = $container->getExtension('ibexa');
         $eZExtension->addPolicyProvider(new LogsUiProvider);
     }
 }

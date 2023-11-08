@@ -2,10 +2,10 @@
 
 namespace IbexaLogsUi\Bundle\Controller;
 
-use eZ\Publish\Core\MVC\Symfony\Security\Authorization\Attribute;
+use Ibexa\Core\MVC\Symfony\Security\Authorization\Attribute;
 use IbexaLogsUi\Bundle\LogManager\LogFile;
 use IbexaLogsUi\Bundle\LogManager\LogsCache;
-use EzSystems\EzPlatformAdminUiBundle\Controller\Controller;
+use Ibexa\Contracts\AdminUi\Controller\Controller;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Logger;
 use Symfony\Component\HttpFoundation\Response;
@@ -116,7 +116,7 @@ class LogsManagerController extends Controller
         array $logs = [],
         array $logLevels = LogFile::LOG_LEVELS
     ): Response {
-        return $this->render('@ezdesign/logs/logs.html.twig', [
+        return $this->render('@ibexadesign/logs/logs.html.twig', [
             'log_path' => $logPath,
             'level' => $level,
             'page' => $page,

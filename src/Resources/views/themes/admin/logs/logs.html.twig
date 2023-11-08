@@ -1,14 +1,14 @@
-{% extends ['@ezdesign/layout.html.twig', '@ezdesign/ui/layout.html.twig'] %}
+{% extends ['@ibexadesign/layout.html.twig', '@ibexadesign/ui/layout.html.twig'] %}
 
 {% block breadcrumbs %}
-    {% include ['@ezdesign/parts/breadcrumbs.html.twig', '@ezdesign/ui/breadcrumbs.html.twig'] with { items: [
+    {% include ['@ibexadesign/parts/breadcrumbs.html.twig', '@ibexadesign/ui/breadcrumbs.html.twig'] with { items: [
         { value: 'breadcrumb.admin'|trans(domain='messages')|desc('Admin') },
         { value: 'logs_ui.menu.label'|trans }
     ]} %}
 {% endblock %}
 
-{% block page_title %}
-    {% include ['@ezdesign/parts/page_title.html.twig', '@ezdesign/ui/page_title.html.twig'] with {
+{% block header %}
+    {% include ['@ibexadesign/parts/page_title.html.twig', '@ibexadesign/ui/page_title.html.twig'] with {
         title: 'logs_ui.menu.label'|trans,
         iconName: 'contentlist'
     } %}
@@ -19,43 +19,37 @@
     {% set max_logs = constant('IbexaLogsUi\\Bundle\\Controller\\LogsManagerController::MAX_LOGS') %}
     {% set pages = (total / per_page_logs)|round(0, 'ceil') %}
 
-    <div class="row ez-header pt-3">
-        <div class="container ez-container">
-            <div class="ez-table-header">
-                <div>
-                    <div class="ez-table-header__headline">
-                        {{ 'logs_ui.text.last_message'|trans }} {{ logs is not empty ? logs|first.date|date('d/m/Y H:i') : '#' }}
-                    </div>
-                    <i class="text-secondary">{{ log_path }}</i>
+    <div class="container ibexa-container">
+        <div class="ibexa-table-header">
+            <div>
+                <div class="ibexa-table-header__headline">
+                    {{ 'logs_ui.text.last_message'|trans }} {{ logs is not empty ? logs|first.date|date('d/m/Y H:i') : '#' }}
                 </div>
-                <div class="ez-table-header__tools">
-                    <a href="{{ path('ibexa_logs_ui_reload') }}" class="btn btn-icon" title="{{ 'logs_ui.text.reload'|trans }}">
-                        <svg class="ez-icon ez-icon-refresh">
-                            <use xlink:href="{{ ez_icon_path('refresh') }}"></use>
-                        </svg>
-                        <span class="text-primary ml-1">{{ 'logs_ui.text.reload'|trans }}</span>
-                    </a>
-                </div>
+                <i class="text-secondary">{{ log_path }}</i>
             </div>
+            <div class="ibexa-table-header__tools">
+                <a href="{{ path('ibexa_logs_ui_reload') }}" class="btn btn-icon" title="{{ 'logs_ui.text.reload'|trans }}">
+                    <svg class="ibexa-icon ibexa-icon--small">
+                        <use xlink:href="{{ ibexa_icon_path('refresh') }}"></use>
+                    </svg>
+                    <span class="text-primary ml-1">{{ 'logs_ui.text.reload'|trans }}</span>
+                </a>
+            </div>
+        </div>
 
-            <ul class="nav nav-tabs ez-tabs px-4">
-                <li class="nav-item">
-                    <a href="{{ path('ibexa_logs_ui_index') }}" class="nav-link {{ level == 'all' ? 'active' }}">
-                        {{ 'logs_ui.text.all_levels'|trans }}
-                    </a>
-                </li>
-                {% for item in log_levels %}
-                    <li class="nav-item">
-                        <a href="{{ path('ibexa_logs_ui_index', {level: item|lower}) }}" class="nav-link {{ level == item|lower ? 'active' }}">
-                            {{ item }}
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
+        <div class="mt-4">
+            <a href="{{ path('ibexa_logs_ui_index') }}" class="btn {{ level == 'all' ? 'btn-primary' : 'btn-secondary' }}">
+                {{ 'logs_ui.text.all_levels'|trans }}
+            </a>
+            {% for item in log_levels %}
+                <a href="{{ path('ibexa_logs_ui_index', {level: item|lower}) }}" class="btn {{ level == item|lower ? 'btn-primary' : 'btn-secondary' }}">
+                    {{ item }}
+                </a>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="container ez-container pb-5" id="ez-tab-list-content-logs">
+    <div class="container ibexa-container" id="ibexa-tab-list-content-logs">
         {% if per_page_logs < total %}
             <div class="mb-2">
                 {% if page != 1 %}
@@ -74,24 +68,24 @@
                 {{ 'logs_ui.text.log_path'|trans }} {{ log_path }}
             </p>
         {% else %}
-            <table class="table ez-table ez-table--list">
+            <table class="table ibexa-table">
                 <thead>
-                <tr>
-                    <th scope="col">Date</th>
-                    <th scope="col">Logger</th>
-                    <th scope="col">Message</th>
+                <tr class="ibexa-table__head-row">
+                    <th class="ibexa-table__header-cell" scope="col">Date</th>
+                    <th class="ibexa-table__header-cell" scope="col">Logger</th>
+                    <th class="ibexa-table__header-cell" scope="col">Message</th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for log in logs %}
-                    <tr>
-                        <th scope="row" class="text-nowrap">{{ log.date|date('d/m/Y H:i:s') }}</th>
-                        <td class="text-nowrap">
-                            <div class="badge badge-{{ log.class is defined ? log.class : 'secondary' }}">
+                    <tr class="ibexa-table__row">
+                        <th scope="row" class="ibexa-table__cell text-nowrap">{{ log.date|date('d/m/Y H:i:s') }}</th>
+                        <td class="ibexa-table__cell text-nowrap">
+                            <div class="badge ibexa-badge ibexa-badge--{{ log.class is defined ? log.class : 'secondary' }}">
                                 {{ log.logger }}.{{ log.level }}
                             </div>
                         </td>
-                        <td class="text-break">
+                        <td class="ibexa-table__cell text-break">
                             <samp>{{ dump_log_message(log.message, log.context) }}</samp>
                             {% if log.context is not empty or log.extra is not empty %}
                                 <details class="mt-2">
@@ -117,7 +111,7 @@
             </table>
         {% endif %}
 
-        {% from '@ezdesign/logs/pagination.html.twig' import pagination %}
+        {% from '@ibexadesign/logs/pagination.html.twig' import pagination %}
         {{ pagination(pages, page, path('ibexa_logs_ui_index') ~ '/' ~ level ~ '/', logs|length, total) }}
     </div>
 {% endblock %}

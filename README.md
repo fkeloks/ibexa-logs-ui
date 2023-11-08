@@ -21,8 +21,8 @@ Symfony bundle dedicated to Ibexa, to add a log management interface to the back
 
 ## Requirements
 
-* php: >=7.3
-* ibexa: 3.3.*
+* php: >=7.4
+* ibexa: 4.0+
 
 :warning: Warning, in its current version, the bundle **only supports** log files in `Monolog/LineFormatter` format.  
 [LineFormatter from Github](https://github.com/Seldaek/monolog/blob/master/src/Monolog/Formatter/LineFormatter.php)

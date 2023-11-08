@@ -22,9 +22,11 @@
         }
     },
     "require": {
-        "php": ">=7.3",
+        "php": ">=7.4",
         "ext-json": "*",
-        "ezsystems/ezplatform-admin-ui": "^2.3",
+        "http-interop/http-factory-guzzle": "^1.2",
+        "ibexa/admin-ui": "^4.0",
+        "ibexa/core": "^4.0",
         "monolog/monolog": "^2.2",
         "symfony/cache": "^5.2",
         "symfony/web-profiler-bundle": "^5.2"
@@ -38,6 +40,9 @@
     "prefer-stable": true,
     "config": {
         "optimize-autoloader": true,
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
     }
 }
