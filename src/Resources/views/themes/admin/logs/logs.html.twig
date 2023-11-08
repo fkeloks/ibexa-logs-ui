@@ -7,7 +7,7 @@
     ]} %}
 {% endblock %}
 
-{% block page_title %}
+{% block header %}
     {% include ['@ibexadesign/parts/page_title.html.twig', '@ibexadesign/ui/page_title.html.twig'] with {
         title: 'logs_ui.menu.label'|trans,
         iconName: 'contentlist'
@@ -19,45 +19,37 @@
     {% set max_logs = constant('IbexaLogsUi\\Bundle\\Controller\\LogsManagerController::MAX_LOGS') %}
     {% set pages = (total / per_page_logs)|round(0, 'ceil') %}
 
-    <div class="row ibexa-header pt-3">
-        <div class="container ibexa-container">
-            <div class="ibexa-table-header">
-                <div>
-                    <div class="ibexa-table-header__headline">
-                        {{ 'logs_ui.text.last_message'|trans }} {{ logs is not empty ? logs|first.date|date('d/m/Y H:i') : '#' }}
-                    </div>
-                    <i class="text-secondary">{{ log_path }}</i>
+    <div class="container ibexa-container">
+        <div class="ibexa-table-header">
+            <div>
+                <div class="ibexa-table-header__headline">
+                    {{ 'logs_ui.text.last_message'|trans }} {{ logs is not empty ? logs|first.date|date('d/m/Y H:i') : '#' }}
                 </div>
-                <div class="ibexa-table-header__tools">
-                    <a href="{{ path('ibexa_logs_ui_reload') }}" class="btn btn-icon" title="{{ 'logs_ui.text.reload'|trans }}">
-                        <svg class="ibexa-icon">
-                            <use xlink:href="{{ ibexa_icon_path('refresh') }}"></use>
-                        </svg>
-                        <span class="text-primary ml-1">{{ 'logs_ui.text.reload'|trans }}</span>
-                    </a>
-                </div>
+                <i class="text-secondary">{{ log_path }}</i>
             </div>
+            <div class="ibexa-table-header__tools">
+                <a href="{{ path('ibexa_logs_ui_reload') }}" class="btn btn-icon" title="{{ 'logs_ui.text.reload'|trans }}">
+                    <svg class="ibexa-icon ibexa-icon--small">
+                        <use xlink:href="{{ ibexa_icon_path('refresh') }}"></use>
+                    </svg>
+                    <span class="text-primary ml-1">{{ 'logs_ui.text.reload'|trans }}</span>
+                </a>
+            </div>
+        </div>
 
-            <div class="ibexa-tabs">
-                <ul class="nav nav-tabs ibexa-tabs__list">
-                    <li class="nav-item ibexa-tabs__tab">
-                        <a href="{{ path('ibexa_logs_ui_index') }}" class="nav-link ibexa-tabs__link {{ level == 'all' ? 'active' }}">
-                            {{ 'logs_ui.text.all_levels'|trans }}
-                        </a>
-                    </li>
-                    {% for item in log_levels %}
-                        <li class="nav-item ibexa-tabs__tab">
-                            <a href="{{ path('ibexa_logs_ui_index', {level: item|lower}) }}" class="nav-link ibexa-tabs__link {{ level == item|lower ? 'active' }}">
-                                {{ item }}
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
+        <div class="mt-4">
+            <a href="{{ path('ibexa_logs_ui_index') }}" class="btn {{ level == 'all' ? 'btn-primary' : 'btn-secondary' }}">
+                {{ 'logs_ui.text.all_levels'|trans }}
+            </a>
+            {% for item in log_levels %}
+                <a href="{{ path('ibexa_logs_ui_index', {level: item|lower}) }}" class="btn {{ level == item|lower ? 'btn-primary' : 'btn-secondary' }}">
+                    {{ item }}
+                </a>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="container ibexa-container pb-5" id="ibexa-tab-list-content-logs">
+    <div class="container ibexa-container" id="ibexa-tab-list-content-logs">
         {% if per_page_logs < total %}
             <div class="mb-2">
                 {% if page != 1 %}
@@ -76,7 +68,7 @@
                 {{ 'logs_ui.text.log_path'|trans }} {{ log_path }}
             </p>
         {% else %}
-            <table class="table ibexa-table ibexa-table--list">
+            <table class="table ibexa-table">
                 <thead>
                 <tr class="ibexa-table__head-row">
                     <th class="ibexa-table__header-cell" scope="col">Date</th>
@@ -89,7 +81,7 @@
                     <tr class="ibexa-table__row">
                         <th scope="row" class="ibexa-table__cell text-nowrap">{{ log.date|date('d/m/Y H:i:s') }}</th>
                         <td class="ibexa-table__cell text-nowrap">
-                            <div class="badge badge-{{ log.class is defined ? log.class : 'secondary' }}">
+                            <div class="badge ibexa-badge ibexa-badge--{{ log.class is defined ? log.class : 'secondary' }}">
                                 {{ log.logger }}.{{ log.level }}
                             </div>
                         </td>

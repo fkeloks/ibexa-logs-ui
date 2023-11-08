@@ -26,6 +26,7 @@ class MenuSubscriber implements EventSubscriberInterface
         $menu[MainMenuBuilder::ITEM_ADMIN]->addChild('logs_ui', [
             'label' => 'logs_ui.menu.label',
             'route' => 'ibexa_logs_ui_index',
+            'extras' => ['translation_domain' => 'messages']
         ]);
     }
 }
