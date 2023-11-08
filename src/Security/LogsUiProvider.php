@@ -2,7 +2,7 @@
 
 namespace IbexaLogsUi\Bundle\Security;
 
-use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Security\PolicyProvider\YamlPolicyProvider;
+use Ibexa\Bundle\Core\DependencyInjection\Security\PolicyProvider\YamlPolicyProvider;
 
 class LogsUiProvider extends YamlPolicyProvider
 {
